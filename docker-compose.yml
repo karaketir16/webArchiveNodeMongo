@@ -1,0 +1,20 @@
+version: "3.2"
+
+services:
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - type: bind
+        source: ./data/mongo
+        target: /data/db
+
+  tst:
+    build: ./tst
+    depends_on:
+      - mongo
+    ports:
+      - "80:3000"
+    volumes:
+      - ./tst:/code
