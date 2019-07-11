@@ -145,6 +145,6 @@ server.get("/", function (req, res, next) {
         });
         // res.send(values);
       });
-sever.get("updateURLs", function (req, res, next) {
-  res.send(updateURLs);
+server.get("updateURLs", function (req, res, next) {
+  res.send(updateURLs());
 });
