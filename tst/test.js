@@ -88,8 +88,9 @@ let updateURLs = co(function* () {
       urlG = $("#wm-ipp-inside > div:nth-child(1) > table > tbody > tr:nth-child(1) > td.n > table > tbody > tr.d > td.b > a").attr("href");
     });
   }
+  return "done";
 });
-updateURLs();
+// updateURLs();
 //
 // function updateDB()
 // {
@@ -138,9 +139,12 @@ updateURLs();
 server.listen(3000);
 
 server.get("/", function (req, res, next) {
-        Url.findOne().lean().exec(function (err, one) {
+        Url.find.lean().exec(function (err, one) {
 
-          res.send(one.html);
+          res.send(one);
         });
         // res.send(values);
       });
+sever.get("updateURLs", function (req, res, next) {
+  res.send(updateURLs);
+});
