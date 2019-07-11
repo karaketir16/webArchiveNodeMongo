@@ -8,7 +8,7 @@ const co = Promise.coroutine;
 
 
 
-mongoose.connect("mongodb://mongo:27017/db",
+let con = mongoose.connect("mongodb://mongo:27017/db",
 { useNewUrlParser: true,
   reconnectTries: 30,
   reconnectInterval: 500
@@ -20,14 +20,23 @@ mongoose.connection.on('error', (err) => {
 
 mongoose.connection.on('connected', () => {
   console.log("OOOKKK");
+  // function clearCollections() {
+  //   for (var collection in mongoose.connection.collections) {
+  //     mongoose.connection.collections[collection].remove(function() {});
+  //   }
+  //   console.log("deleted");
+  // }
+  // clearCollections();
 });
 
 var pageShema = new mongoose.Schema({
-  date: String,
+  date: {  type: String,
+          unique: true},
   html: String
 });
 var urlShema = new mongoose.Schema({
-  url: String
+  url: {  type: String,
+          unique: true}
 });
 // const Cat = mongoose.model('Cat', { name: String });
 // Cat.findOne(
@@ -56,6 +65,7 @@ let lessonCodes = [ "AKM","ATA","ALM","BEB","BED","BEN","BIL","BIO","BLG","BLS",
 const Page = mongoose.model("Page", pageShema);
 const Url = mongoose.model("Url", urlShema);
 
+
 // const url
 let urls = [];
 
@@ -70,6 +80,8 @@ let updateURLs = co(function* () {
     let fnc = Promise.promisifyAll(url);
     yield fnc.saveAsync().then(function ok() {
       console.log("saved");
+    }).catch(function (err) {
+      console.log(""+err);
     });
     yield rp(urlG).then(function func(data) {
       const $ = cheerio.load(data);
@@ -117,21 +129,18 @@ updateURLs();
 //         // });
 //       });
 //       // for ()
-//       server.get("/", function (req, res, next) {
-//         Page.findOne().lean().exec(function (err, one) {
-//           // var body = '<html><body>hello</body></html>';
-//           // res.writeHead(200, {
-//           //   'Content-Length': Buffer.byteLength(one.html),
-//           //   'Content-Type': 'text/html'
-//           // });
-//           // res.write(one.html);
-//           res.send(`deneme: ${lessonCodes}`);
-//         });
-//         // res.send(values);
-//       });
+//
 //     }
 //
 //   }
 // }
 // updateDB();
-// server.listen(3000);
+server.listen(3000);
+
+server.get("/", function (req, res, next) {
+        Url.findOne().lean().exec(function (err, one) {
+
+          res.send(one.html);
+        });
+        // res.send(values);
+      });
