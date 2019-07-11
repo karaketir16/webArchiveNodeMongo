@@ -20,12 +20,14 @@ mongoose.connection.on('error', (err) => {
 
 mongoose.connection.on('connected', () => {
   console.log("OOOKKK");
-  // function clearCollections() {
-  //   for (var collection in mongoose.connection.collections) {
-  //     mongoose.connection.collections[collection].remove(function() {});
-  //   }
-  //   console.log("deleted");
-  // }
+  function clearCollections() {
+    for (var collection in mongoose.connection.collections) {
+      mongoose.connection.collections[collection].remove({});
+    }
+    console.log("deleted");
+    process.exit();
+
+  }
   // clearCollections();
 });
 
@@ -71,70 +73,107 @@ let urls = [];
 
 let updateURLs = co(function* () {
   let now = (new Date()).toISOString().replace(/[^0-9]/g, "");
-  let urlG = `https://web.archive.org/web/${now.slice(0, -3)}/http://www.sis.itu.edu.tr/tr/ders_programlari/LSprogramlar/prg.php?fb=MAT`;
-  while(urlG)
+  let urlG = `https://web.archive.org/web/${now.slice(0, -3)}/http://www.sis.itu.edu.tr/tr/ders_programlari/LSprogramlar/prg.php?fb=`;
+  for (let i in lessonCodes)
   {
-    // urls.push(urlG);
-    let url = new Url({url:urlG});
-    console.log(urlG);
-    let fnc = Promise.promisifyAll(url);
-    yield fnc.saveAsync().then(function ok() {
-      console.log("saved");
-    }).catch(function (err) {
-      console.log(""+err);
-    });
-    yield rp(urlG).then(function func(data) {
+    let code = lessonCodes[i];
+    let urlR = urlG + code;
+    yield rp(urlR).then(co(function *(data) {
+      // console.log(data);
       const $ = cheerio.load(data);
-      urlG = $("#wm-ipp-inside > div:nth-child(1) > table > tbody > tr:nth-child(1) > td.n > table > tbody > tr.d > td.b > a").attr("href");
-    });
+      let url = $("#wmtb > input[type=hidden]:nth-child(3)").attr("value");
+      // console.log("url", url);
+      url = `https://web.archive.org/web/${url}/http://www.sis.itu.edu.tr/tr/ders_programlari/LSprogramlar/prg.php?fb=` + code;
+      let urlS =  new Url({url:url});
+      let urlP = Promise.promisifyAll(urlS);
+      yield urlP.saveAsync().then(function ok() {
+        console.log(`saved: ${url}`);
+      }).catch(function (err) {
+        console.log(""+err);
+      });
+      // urlG = $("#wm-ipp-inside > div:nth-child(1) > table > tbody > tr:nth-child(1) > td.n > table > tbody > tr.d > td.b > a").attr("href");
+    }));
   }
+  // while(urlG)
+  // {
+  //   // urls.push(urlG);
+  //   let url = new Url({url:urlG});
+  //   console.log(urlG);
+  //   let fnc = Promise.promisifyAll(url);
+  //   yield fnc.saveAsync().then(function ok() {
+  //     console.log("saved");
+  //   }).catch(function (err) {
+  //     console.log(""+err);
+  //   });
+  //
+  // }
   return "done";
 });
 // updateURLs();
 //
-// function updateDB()
-// {
-//
-//   // console.log("url", url);
-//   while(urlG)
-//   {
-//     for(let code in lessonCodes)
-//     {
-//       let url
-//       rp(url).then(function func(data) {
-//         const $ = cheerio.load(data);
-//         let strDate = $("#body > table > tbody > tr:nth-child(1) > td > table:nth-child(2) > tbody > tr > td:nth-child(2) > span").text().split(" ");
-//
-//         let date = strDate[0] +"/"+ strDate[1];
-//         let aPage = new Page({date: date, html:data});
-//         console.log("done");
-//         let val1 = [];
-//         $('select option:selected').each(function() {
-//          val1.push($(this).val());
-//         });
-//         let nex = $("#wm-ipp-inside > div:nth-child(1) > table > tbody > tr:nth-child(1) > td.n > table > tbody > tr.d > td.b > a").attr("href");
-//         console.log("next", nex);
-//         if(val1[0] == "MAT")
-//         {
-//           urlG = nex;
-//         }
-//
-//         Page.findOne({date:date}).exec(function (err, one) {
-//           if( ! one)
-//           {
-//             aPage.save();
-//           }
-//         });
-//         // aPage.save(function ok() {
-//         //   console.log("Saved");
-//         // });
-//       });
-//       // for ()
-//
-//     }
-//
-//   }
-// }
+let updateDB = co( function* () {
+
+  let urls = yield Url.find().lean().exec();
+  console.log("hello", urls);
+  // console.log("url", url);
+  for (let i in urls)
+  {
+    url = urls[i].url.slice(0, -3);
+    console.log("URL:", url);
+    for(let code in lessonCodes)
+    {
+      let tmpurl = url + code;
+      console.log(tmpurl);
+      let data = yield rp(tmpurl).then(function func(data) {
+
+        // aPage.save(function ok() {
+        //   console.log("Saved");
+        // });
+        // console.log("done");
+        // let val1 = [];
+        // $('select option:selected').each(function() {
+        //  val1.push($(this).val());
+        // });
+        // let nex = $("#wm-ipp-inside > div:nth-child(1) > table > tbody > tr:nth-child(1) > td.n > table > tbody > tr.d > td.b > a").attr("href");
+        // console.log("next", nex);
+        // if(val1[0] == "MAT")
+        // {
+        //   urlG = nex;
+        // }
+        //
+        // Page.findOne({date:date}).exec(function (err, one) {
+        //   if( ! one)
+        //   {
+        //     aPage.save();
+        //   }
+        // });
+        // aPage.save(function ok() {
+        //   console.log("Saved");
+        // });
+      }).catch(function e(err) {
+        console.log("HATA");
+        console.log(""+err);
+      });
+      console.log(data);
+      const $ = cheerio.load(data);
+      let strDate = $("#body > table > tbody > tr:nth-child(1) > td > table:nth-child(2) > tbody > tr > td:nth-child(2) > span").text().split(" ");
+
+      let date = strDate[0] +"/"+ strDate[1] + "/" + code;
+      let aPage = new Page({date: date, html:data});
+      let aPageA = Promise.promisifyAll(aPage);
+      yield aPageA.saveAsync().then(function ok() {
+        console.log(`saved:${date}`);
+        console.log(`saved:${tmpurl}`);
+      }).catch(function (err) {
+        console.log(""+err);
+      });
+      // for ()
+
+    }
+
+  }
+  return "done";
+});
 // updateDB();
 server.listen(3000);
 
@@ -145,6 +184,10 @@ server.get("/", function (req, res, next) {
         });
         // res.send(values);
       });
+server.get("/updateDB", function (req, res, next) {
+  let x = updateDB();
+  res.send("test");
+});
 server.get("/updateURLs", function (req, res, next) {
   res.send(updateURLs());
 });
