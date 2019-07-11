@@ -139,7 +139,7 @@ let updateURLs = co(function* () {
 server.listen(3000);
 
 server.get("/", function (req, res, next) {
-        Url.find.lean().exec(function (err, one) {
+        Url.find().lean().exec(function (err, one) {
 
           res.send(one);
         });
