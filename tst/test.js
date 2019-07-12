@@ -107,69 +107,73 @@ let updateURLs = co(function* () {
   //   });
   //
   // }
-  return "done";
+  return updateDB();
 });
 // updateURLs();
 //
 let updateDB = co( function* () {
 
   let urls = yield Url.find().lean().exec();
-  console.log("hello", urls);
+  // console.log("hello", urls);
   // console.log("url", url);
   for (let i in urls)
   {
-    url = urls[i].url.slice(0, -3);
+    url = urls[i].url;
+    // url = "https://web.archive.org/web/20120418024313/http://www.sis.itu.edu.tr:80/tr/ders_programlari/LSprogramlar/prg.php?fb=AKM";
     console.log("URL:", url);
-    for(let code in lessonCodes)
-    {
-      let tmpurl = url + code;
-      console.log(tmpurl);
-      let data = yield rp(tmpurl).then(function func(data) {
+    try {
+      while(url)
+      {
+        // console.log(url);
+        let data = null;
+        try {
+           data = yield rp(url);
+        } catch (e) {
+          console.log(""+e);
+        } finally {
 
-        // aPage.save(function ok() {
-        //   console.log("Saved");
-        // });
-        // console.log("done");
-        // let val1 = [];
-        // $('select option:selected').each(function() {
-        //  val1.push($(this).val());
-        // });
-        // let nex = $("#wm-ipp-inside > div:nth-child(1) > table > tbody > tr:nth-child(1) > td.n > table > tbody > tr.d > td.b > a").attr("href");
-        // console.log("next", nex);
-        // if(val1[0] == "MAT")
-        // {
-        //   urlG = nex;
-        // }
-        //
-        // Page.findOne({date:date}).exec(function (err, one) {
-        //   if( ! one)
-        //   {
-        //     aPage.save();
-        //   }
-        // });
-        // aPage.save(function ok() {
-        //   console.log("Saved");
-        // });
-      }).catch(function e(err) {
-        console.log("HATA");
-        console.log(""+err);
-      });
-      console.log(data);
-      const $ = cheerio.load(data);
-      let strDate = $("#body > table > tbody > tr:nth-child(1) > td > table:nth-child(2) > tbody > tr > td:nth-child(2) > span").text().split(" ");
+        }
+        // console.log("HELLO");
+        // console.log(data);
 
-      let date = strDate[0] +"/"+ strDate[1] + "/" + code;
-      let aPage = new Page({date: date, html:data});
-      let aPageA = Promise.promisifyAll(aPage);
-      yield aPageA.saveAsync().then(function ok() {
-        console.log(`saved:${date}`);
-        console.log(`saved:${tmpurl}`);
-      }).catch(function (err) {
-        console.log(""+err);
-      });
-      // for ()
+        const $ = cheerio.load(data);
+        let strDate = $("#body > table > tbody > tr:nth-child(1) > td > table:nth-child(2) > tbody > tr > td:nth-child(2) > span").text().split(" ");
+        // console.log("ilk", strDate);
+        let code = $("select option:selected").val();
+        // console.log("CODE");
+        // console.log(code);
+        // return;
+        let date = null;
+        try
+        {
+          date = strDate[0] +"/"+ strDate[1][0] + "/" + code;
+        }
+        catch(e)
+        {
+          console.log(""+e);
+          strDate = $("#AutoNumber1 > tbody > tr:nth-child(1) > td > p:nth-child(3) > font").text().split(" ");
+          // console.log("ikinci", strDate);
+          // return;
+          date = strDate[4] +"/"+ strDate[5][0] + "/" + code;
+        }
+        console.log(date);
+        let aPage = new Page({date: date, html:data});
+        let aPageA = Promise.promisifyAll(aPage);
+        yield aPageA.saveAsync().then(function ok() {
+          console.log(`saved:${date}`);
+          console.log(`saved:${url}`);
+        }).catch(function (err) {
+          console.log(""+err);
+        });
 
+        url = $("#wm-ipp-inside > div:nth-child(1) > table > tbody > tr:nth-child(1) > td.n > table > tbody > tr.d > td.b > a").attr("href");
+
+      }
+    } catch (e) {
+      console.log(""+e);
+      continue;
     }
+
 
   }
   return "done";
@@ -182,11 +186,11 @@ server.get("/", function (req, res, next) {
 
           res.send(one);
         });
+
         // res.send(values);
       });
 server.get("/updateDB", function (req, res, next) {
-  let x = updateDB();
-  res.send("test");
+
 });
 server.get("/updateURLs", function (req, res, next) {
   res.send(updateURLs());
