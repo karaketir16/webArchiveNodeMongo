@@ -76,7 +76,7 @@ let urls = [];
 let updateURLs = co(function* () {
   let now = (new Date()).toISOString().replace(/[^0-9]/g, "");
   let urlG = `https://web.archive.org/web/${now.slice(0, -3)}/http://www.sis.itu.edu.tr/tr/ders_programlari/LSprogramlar/prg.php?fb=`;
-  for (let i in lessonCodes)
+  for (let i = 0; i < lessonCodes.length; i++)
   {
     let code = lessonCodes[i];
     let urlR = urlG + code;
@@ -227,7 +227,7 @@ server.get("/", function (req, res, next) {
         Page.findOne().lean().exec(function (err, data) {
 
           // console.log("DATA", data);
-
+          if (data == null) return;
           let html = data.html;
           // console.log("html", html);
           let $ = cheerio.load(html);
