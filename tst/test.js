@@ -227,15 +227,7 @@ server.get("/", function (req, res, next) {
         Page.findOne().lean().exec(function (err, data) {
 
           // console.log("DATA", data);
-          if (data == null) return;
-          let html = data.html;
-          // console.log("html", html);
-          let $ = cheerio.load(html);
-          // console.log("after cheerio", $.html("#body > table > tbody > tr:nth-child(1) > td > table:nth-child(3) > tbody > tr > td:nth-child(2) > table").toString("utf8"));
-          let notOld = $.html("#body > table > tbody > tr:nth-child(1) > td > table:nth-child(3) > tbody > tr > td:nth-child(2) > table").toString("utf8");
-          if(notOld)
-            res.write(notOld);
-          else res.write($.html("#AutoNumber1 > tbody > tr:nth-child(2) > td:nth-child(3) > b > b > table").toString("utf8"))
+
             // let html = data.html;
 
 
@@ -248,6 +240,28 @@ server.get("/", function (req, res, next) {
 server.get("/updateDB", function (req, res, next) {
   res.send(updateDB());
   next();
+});
+server.get("/data/:date/:term/:lesson", function (req, res, next) {
+  // {date:req.params.date+req.params.term+req.params.lesson}
+  Page.findOne({date:req.params.date+"/"+req.params.term+"/"+req.params.lesson}).lean().exec(function (err, data) {
+    if ( ! data )
+    {
+      res.send(""+err);
+      return;
+    }
+    // res.send(data);
+    // return;
+    let html = data.html;
+    console.log(data.date);
+    // console.log("html", html);
+    let $ = cheerio.load(html);
+    // console.log("after cheerio", $.html("#body > table > tbody > tr:nth-child(1) > td > table:nth-child(3) > tbody > tr > td:nth-child(2) > table").toString("utf8"));
+    let notOld = $.html("#body > table > tbody > tr:nth-child(1) > td > table:nth-child(3) > tbody > tr > td:nth-child(2) > table").toString("utf8");
+    if(notOld)
+      res.write(notOld);
+    else res.write($.html("#AutoNumber1 > tbody > tr:nth-child(2) > td:nth-child(3) > b > b > table").toString("utf8"));
+    next();
+  });
 });
 server.get("/updateURLs", function (req, res, next) {
   res.send(updateURLs());
