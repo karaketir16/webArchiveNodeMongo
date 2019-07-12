@@ -117,73 +117,77 @@ let updateDB = function () {
 
   Url.find().lean().exec(
     function (err, urls) {
-      for (let i in urls)
-      {
-        url = urls[i].url;
-        // url = "https://web.archive.org/web/20120418024313/http://www.sis.itu.edu.tr:80/tr/ders_programlari/LSprogramlar/prg.php?fb=AKM";
-        console.log("URL:", url);
-        try {
-          function calc(urll)
+      url = urls[0].url;
+      // url = "https://web.archive.org/web/20120418024313/http://www.sis.itu.edu.tr:80/tr/ders_programlari/LSprogramlar/prg.php?fb=AKM";
+      console.log("URL:", url);
+      try {
+        function calc(urll, i)
+        {
+          // console.log(url);
+          if( ! urll)
           {
-            // console.log(url);
-            if( ! urll) return;
-            console.log("in calc:", urll);
-            let data = null;
-            try {
-              unirest.get(urll)
-                .encoding(null)
-                .end(co(function *(d){
-                  console.log("HELLo");
-                  buff = d;
-                  let data = legacy.decode(buff.raw_body, "iso-8859-9");
-                  const $ = cheerio.load(data);
-                  let strDate = $("#body > table > tbody > tr:nth-child(1) > td > table:nth-child(2) > tbody > tr > td:nth-child(2) > span").text().split(" ");
-                  // console.log("ilk", strDate);
-                  let code = $("select option:selected").val();
-                  // console.log("CODE");
-                  // console.log(code);
-                  // return;
-                  let date = null;
-                  try
-                  {
-                    date = strDate[0] +"/"+ strDate[1][0] + "/" + code;
-                  }
-                  catch(e)
-                  {
-                    console.log(""+e);
-                    strDate = $("#AutoNumber1 > tbody > tr:nth-child(1) > td > p:nth-child(3) > font").text().split(" ");
-                    // console.log("ikinci", strDate);
-                    // return;
-                    date = strDate[4] +"/"+ strDate[5][0] + "/" + code;
-                  }
-                  console.log(date);
-                  let aPage = new Page({date: date, html:data});
-                  let aPageA = Promise.promisifyAll(aPage);
-                  yield aPageA.saveAsync().then(function ok() {
-                    console.log(`saved:${date}`);
-                    console.log(`saved:${url}`);
-                  }).catch(function (err) {
-                    console.log(""+err);
-                  });
-
-                  calc( $("#wm-ipp-inside > div:nth-child(1) > table > tbody > tr:nth-child(1) > td.n > table > tbody > tr.d > td.b > a").attr("href"));
-                  // console.log("html", html);
-                  // let $ = cheerio.load(html);
-                  // console.log("after cheerio", $.html("#body > table > tbody > tr:nth-child(1) > td > table:nth-child(3) > tbody > tr > td:nth-child(2) > table").toString("utf8"));
-                  // res.write($.html("#body > table > tbody > tr:nth-child(1) > td > table:nth-child(3) > tbody > tr > td:nth-child(2) > table").toString("utf8"));
-              }));
-            } catch (e) {
-              console.log(""+e);
-            }
+            if(i<urls.length)
+              calc(urls[i+1].url, i+1)
+            return;
           }
-          calc(url);
-        } catch (e) {
-          console.log(""+e);
-          // continue;
+
+          console.log("in calc:", urll);
+          let data = null;
+          try {
+            unirest.get(urll)
+              .encoding(null)
+              .end(co(function *(d){
+                console.log("HELLo");
+                buff = d;
+                let data = legacy.decode(buff.raw_body, "iso-8859-9");
+                const $ = cheerio.load(data);
+                let strDate = $("#body > table > tbody > tr:nth-child(1) > td > table:nth-child(2) > tbody > tr > td:nth-child(2) > span").text().split(" ");
+                // console.log("ilk", strDate);
+                let code = $("select option:selected").val();
+                // console.log("CODE");
+                // console.log(code);
+                // return;
+                let date = null;
+                try
+                {
+                  date = strDate[0] +"/"+ strDate[1][0] + "/" + code;
+                }
+                catch(e)
+                {
+                  console.log(""+e);
+                  strDate = $("#AutoNumber1 > tbody > tr:nth-child(1) > td > p:nth-child(3) > font").text().split(" ");
+                  // console.log("ikinci", strDate);
+                  // return;
+                  date = strDate[4] +"/"+ strDate[5][0] + "/" + code;
+                }
+                console.log(date);
+                let aPage = new Page({date: date, html:data});
+                let aPageA = Promise.promisifyAll(aPage);
+                yield aPageA.saveAsync().then(function ok() {
+                  console.log(`saved:${date}`);
+                  console.log(`saved:${url}`);
+                }).catch(function (err) {
+                  console.log(""+err);
+                });
+
+                calc( $("#wm-ipp-inside > div:nth-child(1) > table > tbody > tr:nth-child(1) > td.n > table > tbody > tr.d > td.b > a").attr("href"), i);
+                // console.log("html", html);
+                // let $ = cheerio.load(html);
+                // console.log("after cheerio", $.html("#body > table > tbody > tr:nth-child(1) > td > table:nth-child(3) > tbody > tr > td:nth-child(2) > table").toString("utf8"));
+                // res.write($.html("#body > table > tbody > tr:nth-child(1) > td > table:nth-child(3) > tbody > tr > td:nth-child(2) > table").toString("utf8"));
+            }));
+          } catch (e) {
+            console.log(""+e);
+          }
         }
+        calc(url, 0);
+      } catch (e) {
+        console.log(""+e);
+        // continue;
+      }
 
 
-      }//for
+
       // console.log("end of for");
       return "Pending";
   });
